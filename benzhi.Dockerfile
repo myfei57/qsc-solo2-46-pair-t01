@@ -8,9 +8,10 @@ ENV PYTHONUNBUFFERED=1
 COPY pyproject.toml README.md ./
 COPY cranefleet ./cranefleet
 COPY web ./web
+COPY config ./config
 
 RUN python -m compileall -q cranefleet
 
 EXPOSE 8080
 
-CMD ["python", "-m", "cranefleet", "--host", "0.0.0.0", "--port", "8080", "--data-dir", "/app/data", "--web-root", "/app/web"]
+CMD ["python", "-m", "cranefleet", "--host", "0.0.0.0", "--port", "8080", "--data-dir", "/app/data", "--web-root", "/app/web", "--site-file", "/app/config/site-expectations.json"]

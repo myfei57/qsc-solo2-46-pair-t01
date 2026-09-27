@@ -56,16 +56,35 @@ def default_boundary() -> list[Point]:
     return [Point(-10.0, -10.0), Point(110.0, -10.0), Point(110.0, 110.0), Point(-10.0, 110.0)]
 
 
-def build_app(data_dir: str = "data", web_root: str = "web") -> App:
-    """Create the store, the components and the console for one run."""
+def open_persistent_store(data_dir: str) -> tuple[Store, Path]:
+    """Open (or create) the durable store and restore its boot snapshot."""
 
-    if data_dir in MEMORY_DIRECTORIES:
-        store: Store = MemoryStore()
-        snapshot_path: Path | None = None
+    store: Store = FileStore(data_dir)
+    snapshot_path = Path(data_dir) / "snapshot.json"
+    restore_boot(store, snapshot_path)
+    return store, snapshot_path
+
+
+def build_app(
+    data_dir: str = "data",
+    web_root: str = "web",
+    *,
+    store: Store | None = None,
+) -> App:
+    """Create the store, the components and the console for one run.
+
+    A boot-verified ``store`` can be supplied so startup checks and the running
+    service share the same restored instance.
+    """
+
+    snapshot_path: Path | None
+    if store is not None:
+        snapshot_path = None if data_dir in MEMORY_DIRECTORIES else Path(data_dir) / "snapshot.json"
+    elif data_dir in MEMORY_DIRECTORIES:
+        store = MemoryStore()
+        snapshot_path = None
     else:
-        store = FileStore(data_dir)
-        snapshot_path = Path(data_dir) / "snapshot.json"
-        restore_boot(store, snapshot_path)
+        store, snapshot_path = open_persistent_store(data_dir)
 
     cluster = Cluster(default_positions())
     zone = ZoneState("zone-1", "吊装作业区", default_boundary())
